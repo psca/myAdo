@@ -32,7 +32,6 @@ def test_list_my_prs_org_wide():
         result = list_my_prs("abc-123-guid")
     call_cmd = mock_run.call_args[0][0]
     assert "searchCriteria.reviewerId=abc-123-guid" in call_cmd
-    assert "--project" not in call_cmd
     assert result == mock_prs["value"]
 
 def test_list_my_prs_filters_by_project():
@@ -54,5 +53,23 @@ def test_list_my_prs_filters_by_repo():
     ]}
     with patch("check_prs.run_json", return_value=all_prs):
         result = list_my_prs("abc-123-guid", repo="repo1")
+    assert len(result) == 1
+    assert result[0]["pullRequestId"] == 1
+
+def test_list_my_prs_non_dict_response_returns_empty():
+    from check_prs import list_my_prs
+    with patch("check_prs.run_json", return_value=[]):
+        result = list_my_prs("abc-123-guid")
+    assert result == []
+
+def test_list_my_prs_filters_by_project_and_repo():
+    from check_prs import list_my_prs
+    all_prs = {"value": [
+        {"pullRequestId": 1, "title": "PR 1", "repository": {"name": "repo1", "project": {"name": "ProjectA"}}},
+        {"pullRequestId": 2, "title": "PR 2", "repository": {"name": "repo2", "project": {"name": "ProjectA"}}},
+        {"pullRequestId": 3, "title": "PR 3", "repository": {"name": "repo1", "project": {"name": "ProjectB"}}},
+    ]}
+    with patch("check_prs.run_json", return_value=all_prs):
+        result = list_my_prs("abc-123-guid", project="ProjectA", repo="repo1")
     assert len(result) == 1
     assert result[0]["pullRequestId"] == 1

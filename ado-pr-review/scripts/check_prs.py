@@ -42,6 +42,8 @@ def get_current_user_id():
     return user_id
 
 def list_my_prs(user_id, project=None, repo=None):
+    # No --route-parameters: omitting the repo route uses the org-level endpoint
+    # (/_apis/git/pullRequests) which supports cross-project search via searchCriteria.
     cmd = (
         f'az devops invoke '
         f'--area git '
