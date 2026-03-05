@@ -105,14 +105,12 @@ def main():
     args = parser.parse_args()
 
     print("Fetching current user...")
-    user = get_current_user()
-    if not user:
-        print("ERROR: Could not determine current user. Run 'az login' first.")
-        sys.exit(1)
-    print(f"Logged in as: {user}\n")
+    user_id = get_current_user_id()
+    user_email = run_json("az account show -o json").get("user", {}).get("name", "")
+    print(f"Logged in as: {user_email}\n")
 
     print("Fetching assigned PRs...")
-    prs = list_my_prs(user, project=args.project, repo=args.repo)
+    prs = list_my_prs(user_id, project=args.project, repo=args.repo)
     if not prs:
         print("No active PRs found where you are a reviewer.")
         return
@@ -128,7 +126,7 @@ def main():
         repo_id = pr["repository"]["id"]
         repo_name = pr["repository"]["name"]
         author = pr.get("createdBy", {}).get("displayName", "Unknown")
-        my_vote = get_my_vote(pr, user)
+        my_vote = get_my_vote(pr, user_email)
 
         active_threads = get_active_threads(pr_id, repo_id, project=args.project)
 
@@ -164,8 +162,8 @@ def main():
     if args.auto_approve:
         to_approve = clean
     else:
-        already_approved = [p for p in clean if get_my_vote(p, user) == 10]
-        not_yet_approved = [p for p in clean if get_my_vote(p, user) != 10]
+        already_approved = [p for p in clean if get_my_vote(p, user_email) == 10]
+        not_yet_approved = [p for p in clean if get_my_vote(p, user_email) != 10]
 
         if already_approved:
             print(f"Already approved by you: {[p['pullRequestId'] for p in already_approved]}")
