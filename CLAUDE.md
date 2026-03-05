@@ -28,5 +28,5 @@ All skills in this repo rely on the Azure CLI with the DevOps extension:
 ```bash
 az login
 az extension add --name azure-devops
-az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
+az devops configure --defaults organization=https://dev.azure.com/<org>
 ```
