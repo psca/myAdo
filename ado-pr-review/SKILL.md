@@ -20,7 +20,7 @@ Automated PR triage and approval for Azure DevOps using the Azure CLI.
 2. For each PR → checks active comment threads via REST API
 3. Reports: clean (no active threads) vs. needs attention
 4. Prompts to approve clean PRs (or --auto-approve to skip prompt)
-5. Optionally run with --closed to summarise recently merged PRs
+5. Run check_prs.py --closed → shows recently merged PRs as a closing summary
 ```
 
 ## Quick Start
@@ -84,8 +84,9 @@ When the user says "check my PRs" or similar:
 3. **Ask before approving** unless the user said "go ahead and approve" or "auto-approve"
 4. **Flag PRs needing attention** — summarize the active thread topics so the user can act on them
 5. **Never approve a PR with active threads** — always leave those for the user to resolve
+6. **Always finish with a closed PRs summary** — run `python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --closed` and present the results under a "Recently Merged" heading, even if no approvals were needed
 
-When the user asks about closed/merged PRs:
+When the user asks specifically about closed/merged PRs:
 
 1. **Run with --closed**: `python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --closed`
 2. **Scope with --project if needed** to narrow results across many projects
