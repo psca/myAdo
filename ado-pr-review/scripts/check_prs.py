@@ -41,13 +41,23 @@ def get_current_user_id():
         sys.exit(1)
     return user_id
 
-def list_my_prs(user_email, project=None, repo=None):
-    cmd = f'az repos pr list --reviewer "{user_email}" --status active -o json'
+def list_my_prs(user_id, project=None, repo=None):
+    cmd = (
+        f'az devops invoke '
+        f'--area git '
+        f'--resource pullRequests '
+        f'--query-parameters "searchCriteria.reviewerId={user_id}&searchCriteria.status=active" '
+        f'--api-version 7.1 '
+        f'-o json'
+    )
+    data = run_json(cmd)
+    prs = data.get("value", []) if isinstance(data, dict) else []
+
     if project:
-        cmd += f' --project "{project}"'
+        prs = [p for p in prs if p.get("repository", {}).get("project", {}).get("name", "").lower() == project.lower()]
     if repo:
-        cmd += f' --repository "{repo}"'
-    return run_json(cmd)
+        prs = [p for p in prs if p.get("repository", {}).get("name", "").lower() == repo.lower()]
+    return prs
 
 def get_active_threads(pr_id, repo_id, project=None):
     """Use az devops invoke to call the pullRequestThreads REST API."""
