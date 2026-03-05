@@ -30,9 +30,13 @@ def run_json(cmd):
         return []
     return json.loads(out)
 
-def get_current_user():
-    data = run_json("az account show -o json")
-    return data.get("user", {}).get("name", "")
+def get_current_user_id():
+    data = run_json("az devops invoke --area profile --resource profiles --route-parameters id=me -o json")
+    user_id = data.get("id", "")
+    if not user_id:
+        print("ERROR: Could not determine ADO user ID. Run 'az login' and ensure the azure-devops extension is installed.")
+        sys.exit(1)
+    return user_id
 
 def list_my_prs(user_email, project=None, repo=None):
     cmd = f'az repos pr list --reviewer "{user_email}" --status active -o json'
