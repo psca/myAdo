@@ -31,10 +31,13 @@ def run_json(cmd):
     return json.loads(out)
 
 def get_current_user_id():
-    data = run_json("az devops invoke --area profile --resource profiles --route-parameters id=me -o json")
+    data = run_json("az devops invoke --area profile --resource profiles --route-parameters id=me --api-version 6.0 -o json")
+    if not isinstance(data, dict):
+        print("ERROR: Could not determine ADO user ID. Run 'az login' and ensure the azure-devops extension is installed.", file=sys.stderr)
+        sys.exit(1)
     user_id = data.get("id", "")
     if not user_id:
-        print("ERROR: Could not determine ADO user ID. Run 'az login' and ensure the azure-devops extension is installed.")
+        print("ERROR: Could not determine ADO user ID. Run 'az login' and ensure the azure-devops extension is installed.", file=sys.stderr)
         sys.exit(1)
     return user_id
 
