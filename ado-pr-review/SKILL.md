@@ -11,7 +11,7 @@ Automated PR triage and approval for Azure DevOps using the Azure CLI.
 
 - `az` CLI installed and logged in (`az login`)
 - Azure DevOps extension: `az extension add --name azure-devops`
-- Default org/project configured: `az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>`
+- Default org configured: `az devops configure --defaults organization=https://dev.azure.com/<org>`
 
 ## Workflow
 
@@ -33,8 +33,9 @@ python ~/.claude/skills/ado-pr-review/scripts/check_prs.py
 # Auto-approve all clean PRs
 python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --auto-approve
 
-# Scope to a project or repo
-python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --project "MyProject" --repo "MyRepo"
+# Optional: filter results to a specific project or repo
+python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --project "MyProject"
+python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --repo "MyRepo"
 
 # Dry run — report only, no approvals
 python ~/.claude/skills/ado-pr-review/scripts/check_prs.py --dry-run
@@ -81,5 +82,5 @@ When the user says "check my PRs" or similar:
 |---|---|
 | `az: command not found` | Install Azure CLI: https://learn.microsoft.com/cli/azure/install-azure-cli |
 | `az repos: not found` | `az extension add --name azure-devops` |
-| No PRs returned | Check default project: `az devops configure -l` |
+| No PRs returned | Check default org: `az devops configure -l` and verify `az login` is active |
 | Thread API returns empty | Verify `repositoryId` — use the GUID, not the name |
