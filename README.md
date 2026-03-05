@@ -13,12 +13,12 @@ Personal collection of Claude Code skills for Azure DevOps automation.
 One-time setup:
 
 ```bash
-az login
+az login --allow-no-subscriptions
 az extension add --name azure-devops
 az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
 ```
 
-`az login` will need to be re-run when your token expires. The other two commands are permanent.
+`az login --allow-no-subscriptions` is required when your tenant has no Azure subscriptions (DevOps-only tenants). Re-run it when your token expires. The other two commands are permanent.
 
 ## Usage
 
