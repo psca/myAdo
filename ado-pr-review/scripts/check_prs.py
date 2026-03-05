@@ -10,12 +10,15 @@ Usage:
     python check_prs.py --project <name>   # Scope to a specific project
     python check_prs.py --repo <name>      # Scope to a specific repository
     python check_prs.py --dry-run          # Report only, no approvals
+    python check_prs.py --closed           # Show recently closed/merged PRs summary
 """
 
 import subprocess
 import json
 import sys
 import argparse
+import os
+import tempfile
 
 def run(cmd, check=True):
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
@@ -89,8 +92,51 @@ def get_my_vote(pr, user_email):
             return r.get("vote", 0)
     return 0
 
-def approve_pr(pr_id):
-    run(f'az repos pr update --id {pr_id} --vote approve -o none')
+def approve_pr(pr, user_id):
+    """Approve a PR via the pullRequestReviewers REST API, preserving isRequired."""
+    pr_id = pr["pullRequestId"]
+    repo_id = pr["repository"]["id"]
+
+    is_required = False
+    for r in pr.get("reviewers", []):
+        if r.get("id", "") == user_id:
+            is_required = r.get("isRequired", False)
+            break
+
+    vote_data = json.dumps({"vote": 10, "isRequired": is_required})
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        f.write(vote_data)
+        tmp_path = f.name
+    try:
+        run(
+            f'az devops invoke '
+            f'--area git '
+            f'--resource pullRequestReviewers '
+            f'--route-parameters repositoryId={repo_id} pullRequestId={pr_id} reviewerId={user_id} '
+            f'--http-method PUT '
+            f'--in-file {tmp_path} '
+            f'-o none'
+        )
+    finally:
+        os.unlink(tmp_path)
+
+
+def list_closed_prs(user_id, project=None, repo=None, top=10):
+    cmd = (
+        f'az devops invoke '
+        f'--area git '
+        f'--resource pullRequests '
+        f'--query-parameters "searchCriteria.reviewerId={user_id}&searchCriteria.status=completed&$top={top}" '
+        f'--api-version 7.1 '
+        f'-o json'
+    )
+    data = run_json(cmd)
+    prs = data.get("value", []) if isinstance(data, dict) else []
+    if project:
+        prs = [p for p in prs if p.get("repository", {}).get("project", {}).get("name", "").lower() == project.lower()]
+    if repo:
+        prs = [p for p in prs if p.get("repository", {}).get("name", "").lower() == repo.lower()]
+    return prs
 
 def vote_label(vote):
     labels = {10: "Approved", 5: "Approved w/suggestions", 0: "No vote", -5: "Waiting for author", -10: "Rejected"}
@@ -102,6 +148,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Report only, no approvals")
     parser.add_argument("--project", help="Filter by project name")
     parser.add_argument("--repo", help="Filter by repository name")
+    parser.add_argument("--closed", action="store_true", help="Show recently closed/merged PRs summary")
     args = parser.parse_args()
 
     print("Fetching current user...")
@@ -112,6 +159,26 @@ def main():
         print("ERROR: Could not determine account email. Run 'az login'.", file=sys.stderr)
         sys.exit(1)
     print(f"Logged in as: {user_email}\n")
+
+    if args.closed:
+        print("Fetching recently closed PRs...")
+        closed_prs = list_closed_prs(user_id, project=args.project, repo=args.repo)
+        if not closed_prs:
+            print("No recently closed PRs found.")
+            return
+        print(f"Recently closed PRs ({len(closed_prs)}):\n")
+        for pr in closed_prs:
+            pr_id = pr["pullRequestId"]
+            title = pr["title"]
+            repo_name = pr["repository"]["name"]
+            project_name = pr.get("repository", {}).get("project", {}).get("name", "")
+            author = pr.get("createdBy", {}).get("displayName", "Unknown")
+            closed_date = (pr.get("closedDate") or pr.get("completionQueueTime") or "")[:10]
+            merged_by = pr.get("closedBy", {}).get("displayName", "") if pr.get("closedBy") else ""
+            merged_str = f" | Merged by: {merged_by}" if merged_by else ""
+            print(f"  ✅ PR #{pr_id} — {title}")
+            print(f"     Project: {project_name} | Repo: {repo_name} | Author: {author}{merged_str} | Closed: {closed_date}")
+        return
 
     print("Fetching assigned PRs...")
     prs = list_my_prs(user_id, project=args.project, repo=args.repo)
@@ -181,7 +248,7 @@ def main():
     for pr in to_approve:
         pr_id = pr["pullRequestId"]
         print(f"Approving PR #{pr_id}...")
-        approve_pr(pr_id)
+        approve_pr(pr, user_id)
         print(f"  ✅ Approved PR #{pr_id}")
 
     if to_approve:
