@@ -10,11 +10,15 @@ Personal collection of Claude Code skills for Azure DevOps automation.
 
 ## Prerequisites
 
+One-time setup:
+
 ```bash
 az login
 az extension add --name azure-devops
 az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>
 ```
+
+`az login` will need to be re-run when your token expires. The other two commands are permanent.
 
 ## Usage
 
