@@ -1,0 +1,22 @@
+{
+  "name": "myado-skills",
+  "owner": {
+    "name": "Anthony",
+    "email": ""
+  },
+  "metadata": {
+    "description": "Azure DevOps workflow skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "ado-skills",
+      "description": "Azure DevOps automation skills including PR review and approval",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./ado-pr-review"
+      ]
+    }
+  ]
+}
