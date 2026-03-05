@@ -106,7 +106,11 @@ def main():
 
     print("Fetching current user...")
     user_id = get_current_user_id()
-    user_email = run_json("az account show -o json").get("user", {}).get("name", "")
+    account = run_json("az account show -o json")
+    user_email = account.get("user", {}).get("name", "") if isinstance(account, dict) else ""
+    if not user_email:
+        print("ERROR: Could not determine account email. Run 'az login'.", file=sys.stderr)
+        sys.exit(1)
     print(f"Logged in as: {user_email}\n")
 
     print("Fetching assigned PRs...")
